@@ -1,4 +1,4 @@
-# regression_analysis
+# Statistical Analysis
 
 A repository to practice various statistical techniques in both R and Python.
 
