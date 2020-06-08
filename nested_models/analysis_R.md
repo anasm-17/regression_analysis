@@ -213,5 +213,9 @@ print(paste("p-value:", round(p_value, 4)))
 
     ## [1] "p-value: 0.1147"
 
-Almost the same as from the ANOVA. \# References \[1\]
+Almost the same as from the ANOVA.
+
+# References
+
+\[1\]
 <https://www.stat.ncsu.edu/people/bloomfield/courses/st370/Slides/MandR-ch12-sec02-06.pdf>
