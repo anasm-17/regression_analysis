@@ -1,5 +1,5 @@
 ---
-title: "analysis - R"
+title: "Comparing Nested Models - R"
 author: "Anas Muhammad"
 date: "6/7/2020"
 output:
@@ -26,17 +26,99 @@ gpa_data <- read_csv("../data/gpa_data.csv")
 gpa_data %>% ggpairs(progress = FALSE)
 ```
 
-We are going to try and model `univ_gpa` with the predictors `high_gpa`, `math_sat` and `verb_sat`, represented by the following linear equation:
+We are going to try and build 3 nested models to see if adding either `high_sat` or `verb_sat` has an impact on the model.
+
+1) model_1:
 $$
-univ\_gpa_i=\beta_0+\beta_1 high\_gpa_i+ \beta_2 math\_sat_i+ \beta_3 verb\_sat_i+ \varepsilon_i
+univ\_gpa_i = \beta_0 + \beta_1 high\_gpa_i + \varepsilon_i
 $$
 
-Lets try to fit the linear model
+
+2) model_2:
+$$
+univ\_gpa_i = \beta_0 + \beta_1 high\_gpa_i + \beta_2 math\_sat_i + \varepsilon_i
+$$
+
+3) model_3:
+$$
+univ\_gpa_i=\beta_0+\beta_1 high\_gpa_i+ \beta_2 verb\_sat_i+ \varepsilon_i
+$$
+
 
 ```{r model_fitting}
-model_MLR <- lm(univ_gpa~math_sat + verb_sat + high_gpa, data = gpa_data)
-
-tidy(model_MLR)
+model_1 <- lm(univ_gpa~high_gpa, data = gpa_data)
+model_2 <- lm(univ_gpa~high_gpa + math_sat, data = gpa_data)
+model_3 <- lm(univ_gpa~high_gpa + verb_sat, data = gpa_data)
 ```
 
-It seems that only the `high_gpa` is statistically significant and the rest are not.
+Lets look at the ANOVA for the nested models:
+
+```{r anova_models}
+# ANOVA model 1 and model 2 
+# adding `math_sat`
+anova(model_1, model_2)
+
+# ANOVA model 1 and model 3
+# adding `verb_sat`
+anova(model_1, model_3)
+```
+
+The results above show non-significant p-value of 0.105 when adding `math_sat` predictor and a significant p-value of 0.0466 when adding `verb_sat` to the linear model. Therefore, additional $\beta_2$ coefficient from the `verb_sat` predictor is significant, whereas for `math_sat` it is not.
+
+```{r add_model_1_2}
+tidy(model_3)
+```
+
+It is worth noting here that the p-value of the model `univ_gpa` ~ `high_gpa` + `math_sat` is equal to the p-value from the ANOVA. 
+
+Similarly for `univ_gpa` ~ `high_gpa` + `verb_sat`, the same thing can be observed.
+
+```{r add_model_1_3}
+anova(model_3)
+```
+
+
+However when adding more than one predictor to the base model, this is not the case as seen here:
+```{r model_all}
+model_all <- lm(univ_gpa ~ high_gpa + verb_sat + math_sat, data=gpa_data)
+
+tidy(model_all)
+anova(model_1, model_all)
+```
+
+In order to get the p-value as obtained from the `anova()` function, we need to compute the general regression test or the extra sum of squares test. Below equation taken from [1].
+
+$$
+SS_{R,extra} = SS_{R, full} - SS_{R, reduced}
+$$
+And the resulting F would be from [1]:
+$$
+F_{OBS} = \frac{SS_{R, extra}/r}{MS_{E, full}}  
+$$
+```{r p-val all model}
+# Sum of squared residuals for reduced model
+preds_model_1 <- fitted(model_1)
+deviation_model_1 <- (gpa_data$univ_gpa - preds_model_1)^2
+SS_R_reduced <- sum(deviation_model_1)
+
+# Sum of squared residuals for full model
+preds_model_all <- fitted(model_all)
+deviation_model_all <- (gpa_data$univ_gpa - preds_model_all)^2
+SS_R_full <- sum(deviation_model_all)
+
+# Sum of squared residuals, extra
+SS_R_extra <- SS_R_reduced - SS_R_full
+
+
+F_obs <- (SS_R_extra/2)/mean(model_all$residuals^2)
+
+df_num <- 2
+df_den <- length(gpa_data$high_gpa) - 2 - 1
+p_value <- 1-pf(F_obs, df1=df_num, df2=df_den)
+
+print(paste("F:", round(F_obs, 4)))
+print(paste("p-value:", round(p_value, 4)))
+```
+Almost the same as from the ANOVA.
+# References
+[1] https://www.stat.ncsu.edu/people/bloomfield/courses/st370/Slides/MandR-ch12-sec02-06.pdf
