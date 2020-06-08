@@ -1,0 +1,42 @@
+---
+title: "analysis - R"
+author: "Anas Muhammad"
+date: "6/7/2020"
+output:
+  github_document:
+    pandoc_args: --webtex
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse, quietly = TRUE)
+library(broom, quietly = TRUE)
+library(GGally, quietly = TRUE)
+library(gridExtra, quietly = TRUE)
+library(rsample, quietly = TRUE)
+```
+
+## 1. GPA Data
+
+```{r pair plot}
+# read in GPA data
+gpa_data <- read_csv("../data/gpa_data.csv")
+
+# pair plot
+gpa_data %>% ggpairs(progress = FALSE)
+```
+
+We are going to try and model `univ_gpa` with the predictors `high_gpa`, `math_sat` and `verb_sat`, represented by the following linear equation:
+$$
+univ\_gpa_i=\beta_0+\beta_1 high\_gpa_i+ \beta_2 math\_sat_i+ \beta_3 verb\_sat_i+ \varepsilon_i
+$$
+
+Lets try to fit the linear model
+
+```{r model_fitting}
+model_MLR <- lm(univ_gpa~math_sat + verb_sat + high_gpa, data = gpa_data)
+
+tidy(model_MLR)
+```
+
+It seems that only the `high_gpa` is statistically significant and the rest are not.
